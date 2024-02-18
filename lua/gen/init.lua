@@ -208,9 +208,24 @@ M.exec = function(options)
         end
 
         local json = vim.fn.json_encode(body)
-        json = vim.fn.shellescape(json)
-        if vim.o.shell == 'cmd.exe' then json = string.gsub(json, '\\\"\"', '\\\\\\\"') end
+        _G.user_gen_last_body = body
+        _G.user_gen_last_prompt = prompt
+        if vim.o.shell == "powershell" or vim.o.shell == "pwsh" then
+            if _G.user_encode_body_to_powershell then
+                json = _G.user_encode_body_to_powershell(body)
+            elseif _G.user_encode_to_powershell then
+                json = _G.user_encode_to_powershell(json)
+            else
+                json = string.gsub(json, [["]], [[""]])
+            end
+        else
+            json = vim.fn.shellescape(json)
+            if vim.o.shell == "cmd.exe" then
+                json = string.gsub(json, '\\""', '\\\\\\"')
+            end
+        end
         cmd = string.gsub(cmd, "%$body", json)
+        _G.user_gen_last_cmd = cmd
     end
 
     if M.context ~= nil then write_to_buffer({"", "", "---", ""}) end
